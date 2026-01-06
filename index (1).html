@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>包剪揼遊戲 - Rock Paper Scissors</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function RockPaperScissors() {
+            const [playerChoice, setPlayerChoice] = useState(null);
+            const [computerChoice, setComputerChoice] = useState(null);
+            const [result, setResult] = useState('');
+            const [score, setScore] = useState({ player: 0, computer: 0, tie: 0 });
+            const [isAnimating, setIsAnimating] = useState(false);
+            const [playerName, setPlayerName] = useState('玩家');
+            const [computerName, setComputerName] = useState('電腦對手');
+            const [showNameInput, setShowNameInput] = useState(false);
+            const [selectedLevel, setSelectedLevel] = useState(0);
+            const [showLevelSelect, setShowLevelSelect] = useState(false);
+
+            // 電腦等級系統
+            const computerLevels = [
+                { name: '新手機器人', minScore: 0, emoji: '🤖', winRate: 0.3, description: '剛學會玩的機器人，很容易打敗' },
+                { name: '普通對手', minScore: 3, emoji: '💻', winRate: 0.5, description: '一般水平，勝負各半' },
+                { name: '高手電腦', minScore: 6, emoji: '🎯', winRate: 0.65, description: '經驗豐富，有點難對付' },
+                { name: '大師級AI', minScore: 10, emoji: '👑', winRate: 0.8, description: '高手中的高手，小心應戰' },
+                { name: '終極挑戰者', minScore: 15, emoji: '🔥', winRate: 0.9, description: '幾乎不會輸的終極對手' }
+            ];
+
+            const choices = [
+                { name: '石頭', emoji: '✊', value: 'rock' },
+                { name: '剪刀', emoji: '✌️', value: 'scissors' },
+                { name: '布', emoji: '✋', value: 'paper' }
+            ];
+
+            // 計算當前電腦等級
+            const getCurrentLevel = () => {
+                return computerLevels[selectedLevel];
+            };
+
+            const currentLevel = getCurrentLevel();
+
+            const getRandomChoice = () => {
+                return choices[Math.floor(Math.random() * choices.length)];
+            };
+
+            // 智能電腦選擇（根據等級調整勝率）
+            const getComputerChoice = (playerChoice) => {
+                const random = Math.random();
+                
+                // 根據等級決定是否使用智能策略
+                if (random < currentLevel.winRate && playerChoice) {
+                    // 智能選擇：選擇能贏玩家的選項
+                    if (playerChoice.value === 'rock') return choices.find(c => c.value === 'paper');
+                    if (playerChoice.value === 'scissors') return choices.find(c => c.value === 'rock');
+                    if (playerChoice.value === 'paper') return choices.find(c => c.value === 'scissors');
+                }
+                
+                // 隨機選擇
+                return getRandomChoice();
+            };
+
+            const determineWinner = (player, computer) => {
+                if (player.value === computer.value) return 'tie';
+                if (
+                    (player.value === 'rock' && computer.value === 'scissors') ||
+                    (player.value === 'scissors' && computer.value === 'paper') ||
+                    (player.value === 'paper' && computer.value === 'rock')
+                ) {
+                    return 'player';
+                }
+                return 'computer';
+            };
+
+            const playGame = (choice) => {
+                if (isAnimating) return;
+                
+                setIsAnimating(true);
+                setPlayerChoice(choice);
+                setResult('');
+                
+                setTimeout(() => {
+                    const compChoice = getComputerChoice(choice);
+                    setComputerChoice(compChoice);
+                    
+                    const winner = determineWinner(choice, compChoice);
+                    
+                    if (winner === 'player') {
+                        setResult('🎉 你贏了！');
+                        setScore(prev => ({ ...prev, player: prev.player + 1 }));
+                    } else if (winner === 'computer') {
+                        setResult('😔 電腦贏了！');
+                        setScore(prev => ({ ...prev, computer: prev.computer + 1 }));
+                    } else {
+                        setResult('🤝 平手！');
+                        setScore(prev => ({ ...prev, tie: prev.tie + 1 }));
+                    }
+                    
+                    setIsAnimating(false);
+                }, 500);
+            };
+
+            const resetGame = () => {
+                setPlayerChoice(null);
+                setComputerChoice(null);
+                setResult('');
+                setScore({ player: 0, computer: 0, tie: 0 });
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full">
+                        <h1 className="text-4xl font-bold text-center mb-2 text-gray-800">
+                            包剪揼遊戲
+                        </h1>
+                        <p className="text-center text-gray-600 mb-6">選擇你的出拳！</p>
+                        
+                        {/* 計分板 */}
+                        <div className="grid grid-cols-3 gap-4 mb-8">
+                            <div className="bg-blue-100 rounded-lg p-4 text-center">
+                                <div className="text-sm text-gray-600 truncate">{playerName}</div>
+                                <div className="text-3xl font-bold text-blue-600">{score.player}</div>
+                            </div>
+                            <div className="bg-gray-100 rounded-lg p-4 text-center">
+                                <div className="text-sm text-gray-600">平手</div>
+                                <div className="text-3xl font-bold text-gray-600">{score.tie}</div>
+                            </div>
+                            <div className="bg-red-100 rounded-lg p-4 text-center">
+                                <div className="text-sm text-gray-600 truncate">{currentLevel.emoji} {currentLevel.name}</div>
+                                <div className="text-3xl font-bold text-red-600">{score.computer}</div>
+                            </div>
+                        </div>
+
+                        {/* 遊戲區域 */}
+                        <div className="grid grid-cols-2 gap-8 mb-8">
+                            <div className="text-center">
+                                <div className="text-lg font-semibold mb-4 text-gray-700">{playerName}</div>
+                                <div className="bg-blue-50 rounded-full w-32 h-32 flex items-center justify-center mx-auto border-4 border-blue-300">
+                                    <span className="text-6xl">
+                                        {playerChoice ? playerChoice.emoji : '❓'}
+                                    </span>
+                                </div>
+                                {playerChoice && (
+                                    <div className="mt-3 text-lg font-medium text-gray-700">
+                                        {playerChoice.name}
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="text-center">
+                                <div className="text-lg font-semibold mb-4 text-gray-700">{currentLevel.emoji} {currentLevel.name}</div>
+                                <div className="bg-red-50 rounded-full w-32 h-32 flex items-center justify-center mx-auto border-4 border-red-300">
+                                    <span className="text-6xl">
+                                        {computerChoice ? computerChoice.emoji : '❓'}
+                                    </span>
+                                </div>
+                                {computerChoice && (
+                                    <div className="mt-3 text-lg font-medium text-gray-700">
+                                        {computerChoice.name}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 結果顯示 */}
+                        {result && (
+                            <div className="text-center mb-6">
+                                <div className="text-3xl font-bold text-gray-800 animate-bounce">
+                                    {result}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 選擇按鈕 */}
+                        <div className="grid grid-cols-3 gap-4 mb-6">
+                            {choices.map((choice) => (
+                                <button
+                                    key={choice.value}
+                                    onClick={() => playGame(choice)}
+                                    disabled={isAnimating}
+                                    className="bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl p-6 transform hover:scale-105 transition-all duration-200 shadow-lg disabled:cursor-not-allowed"
+                                >
+                                    <div className="text-5xl mb-2">{choice.emoji}</div>
+                                    <div className="text-lg font-semibold">{choice.name}</div>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 控制按鈕 */}
+                        <div className="grid grid-cols-3 gap-3">
+                            <button
+                                onClick={() => setShowLevelSelect(!showLevelSelect)}
+                                className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl py-3 font-semibold transition-colors duration-200"
+                            >
+                                🎮 選擇等級
+                            </button>
+                            <button
+                                onClick={() => setShowNameInput(!showNameInput)}
+                                className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl py-3 font-semibold transition-colors duration-200"
+                            >
+                                ⚙️ 設定名稱
+                            </button>
+                            <button
+                                onClick={resetGame}
+                                className="bg-gray-600 hover:bg-gray-700 text-white rounded-xl py-3 font-semibold transition-colors duration-200"
+                            >
+                                🔄 重新開始
+                            </button>
+                        </div>
+
+                        {/* 等級選擇介面 */}
+                        {showLevelSelect && (
+                            <div className="mt-6 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 border-2 border-orange-300">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">選擇機器人等級</h3>
+                                <div className="space-y-3">
+                                    {computerLevels.map((level, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => {
+                                                setSelectedLevel(index);
+                                                setShowLevelSelect(false);
+                                            }}
+                                            className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                                                selectedLevel === index
+                                                    ? 'bg-orange-500 border-orange-600 text-white shadow-lg transform scale-105'
+                                                    : 'bg-white border-orange-200 hover:border-orange-400 hover:shadow-md'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-3">
+                                                    <span className="text-3xl">{level.emoji}</span>
+                                                    <div>
+                                                        <div className={`font-bold text-lg ${selectedLevel === index ? 'text-white' : 'text-gray-800'}`}>
+                                                            {level.name}
+                                                        </div>
+                                                        <div className={`text-sm ${selectedLevel === index ? 'text-orange-100' : 'text-gray-600'}`}>
+                                                            {level.description}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {selectedLevel === index && (
+                                                    <span className="text-2xl">✓</span>
+                                                )}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 名稱設定彈出視窗 */}
+                        {showNameInput && (
+                            <div className="mt-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-300">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">設定名稱</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            你的名稱：
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={playerName}
+                                            onChange={(e) => setPlayerName(e.target.value || '玩家')}
+                                            className="w-full px-4 py-2 border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500"
+                                            placeholder="輸入你的名稱"
+                                            maxLength={15}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            電腦名稱：
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={computerName}
+                                            onChange={(e) => setComputerName(e.target.value || '電腦對手')}
+                                            className="w-full px-4 py-2 border-2 border-red-300 rounded-lg focus:outline-none focus:border-red-500"
+                                            placeholder="輸入電腦名稱"
+                                            maxLength={15}
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => setShowNameInput(false)}
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white rounded-lg py-2 font-semibold transition-colors duration-200"
+                                    >
+                                        ✓ 完成
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<RockPaperScissors />, document.getElementById('root'));
+    </script>
+</body>
+</html>
